@@ -1,0 +1,99 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>K — 2.1 Spatial Noise Prototype</title><style>
+*{box-sizing:border-box}html,body{margin:0;height:100%;overflow:hidden;background:#111;color:#fff;font-family:system-ui,Arial}#g{position:relative;width:100vw;height:100vh;min-height:620px;overflow:hidden;background:linear-gradient(#91a1aa,#c7c5b8 57%,#5d665c);touch-action:none}
+#camera{position:absolute;inset:0;will-change:transform}.skyline{position:absolute;bottom:110px;height:420px;width:6200px;background:linear-gradient(90deg,#6f806b 0 12%,transparent 12% 100%)}
+.mountain{position:absolute;bottom:110px;width:900px;height:300px;background:#647761;clip-path:polygon(0 100%,35% 25%,60% 55%,82% 10%,100% 100%);opacity:.65}.road{position:absolute;left:0;bottom:0;width:6200px;height:112px;background:linear-gradient(#696761,#444843)}
+.building{position:absolute;bottom:110px;background:#686866;border:1px solid #ffffff16}.building:before{content:"";position:absolute;left:-8px;right:-8px;top:-32px;height:34px;background:#53514e;clip-path:polygon(50% 0,100% 100%,0 100%)}.window{position:absolute;width:15px;height:18px;background:#e6d9a955;border:1px solid #fff2}
+.tree{position:absolute;bottom:110px;width:20px;height:95px;background:#4c4034}.tree:before{content:"";position:absolute;width:100px;height:100px;border-radius:50%;background:#566b58;left:-40px;top:-70px}
+.sign{position:absolute;bottom:155px;padding:8px 11px;background:#765f42;color:#fff1d5;font-weight:850;font-size:12px;transform:rotate(var(--r));box-shadow:0 4px 8px #0003}
+.tower{position:absolute;bottom:110px;width:110px;height:380px;background:#4b5254;clip-path:polygon(35% 0,65% 0,73% 12%,86% 12%,86% 100%,14% 100%,14% 12%,27% 12%)}.bell{position:absolute;font-size:38px}
+.hero{position:absolute;bottom:109px;width:48px;height:75px;z-index:12}.head{position:absolute;left:9px;width:30px;height:30px;border-radius:50%;background:#cda58c}.hair{position:absolute;left:1px;top:-5px;width:40px;height:50px;border-radius:55% 55% 65% 65%;background:#28201f;z-index:-1}.body{position:absolute;left:8px;top:29px;width:32px;height:31px;border-radius:9px;background:#eee3d7}.legs{position:absolute;left:11px;top:57px;width:25px;height:18px;border-left:8px solid #63778c;border-right:8px solid #63778c}
+.source{position:absolute;width:14px;height:14px;border-radius:50%;background:#fff0;z-index:8}
+.bubble{position:absolute;left:50%;bottom:22px;transform:translateX(-50%) rotate(var(--rot)) scale(.82);color:#fff;background:transparent;text-shadow:0 2px 8px #000,0 0 18px #0009;padding:4px 7px;max-width:270px;white-space:normal;text-align:center;font-weight:650;font-size:var(--fs);line-height:1.12;opacity:0;transition:opacity .16s,transform .2s;pointer-events:none;animation:float var(--dur) ease-in-out infinite alternate}
+.source.audible .bubble{opacity:var(--op);transform:translateX(-50%) rotate(var(--rot)) scale(var(--scale))}
+@keyframes float{from{margin-bottom:-5px;margin-left:-7px}to{margin-bottom:9px;margin-left:9px}}
+.hud{position:absolute;z-index:30;top:14px;left:14px;right:14px;display:flex;justify-content:space-between;gap:12px;pointer-events:none}.panel{background:#111820dc;padding:10px 12px;border-radius:12px;backdrop-filter:blur(5px);font-size:12px}.panel b{font-size:13px}.meter{width:180px;height:11px;background:#ffffff22;border-radius:10px;overflow:hidden;margin:6px 0 3px}.fill{height:100%;width:0;background:#eee;transition:width .1s}.coords{opacity:.65}.hint{position:absolute;z-index:32;bottom:124px;left:50%;transform:translateX(-50%);padding:8px 12px;border-radius:10px;background:#f4f0e7;color:#222;font-size:12px;font-weight:800;white-space:nowrap}
+.controls{position:absolute;z-index:40;bottom:16px;left:0;right:0;display:flex;justify-content:center;gap:10px}.controls button,.sound{min-height:50px;border:1px solid #ffffff35;border-radius:14px;background:#17202add;color:white;font-weight:850;padding:0 22px}.sound{position:absolute;z-index:41;right:14px;bottom:16px;min-height:42px;font-size:11px}.breath{background:#eee9dd!important;color:#222!important}
+.over{display:none;position:absolute;z-index:50;inset:0;background:#11171cce;align-items:center;justify-content:center;text-align:center}.over.show{display:flex}.ring{width:90px;height:90px;border:2px solid #fff9;border-radius:50%;margin:22px auto;transform:scale(.7);transition:3s}.over.breathing .ring{transform:scale(1.35)}
+.noisy{filter:contrast(1.08) saturate(.78)}.loud{filter:contrast(1.18) saturate(.62) blur(.25px)}.legend{position:absolute;z-index:31;top:94px;left:14px;background:#111820a8;padding:8px 10px;border-radius:9px;font-size:11px;opacity:.75}
+@media(max-width:700px){.meter{width:125px}.legend{display:none}.sound{top:80px;bottom:auto}.hint{bottom:92px}.controls{bottom:10px}}
+</style></head><body><div id="g" tabindex="0"><div id="camera"><div class="skyline"></div><div class="mountain" style="left:0"></div><div class="mountain" style="left:650px;opacity:.35"></div><div class="road"></div>
+<div class="tree" style="left:450px"></div><div class="tree" style="left:800px"></div><div class="tree" style="left:1200px"></div>
+<div class="building" style="left:1550px;width:180px;height:160px"></div><div class="building" style="left:1850px;width:210px;height:210px"></div><div class="building" style="left:2200px;width:150px;height:140px"></div><div class="building" style="left:2600px;width:230px;height:245px"></div><div class="building" style="left:3050px;width:180px;height:180px"></div><div class="building" style="left:3500px;width:220px;height:230px"></div><div class="building" style="left:3970px;width:170px;height:150px"></div><div class="building" style="left:4450px;width:220px;height:230px"></div>
+<div class="sign" style="left:1750px;--r:-7deg">← FAMILY</div><div class="sign" style="left:2350px;--r:6deg">FUTURE →</div><div class="sign" style="left:2920px;--r:-5deg">EXPECTATIONS →</div><div class="sign" style="left:3370px;--r:8deg">← RELATIONSHIPS</div><div class="sign" style="left:3890px;--r:-4deg">DON'T MAKE A MISTAKE</div>
+<div class="tower" style="left:5600px"></div><div class="bell" style="left:5636px;bottom:445px">🔔</div>
+<div class="hero"><div class="head"></div><div class="hair"></div><div class="body"></div><div class="legs"></div></div></div>
+<div class="hud"><div class="panel"><b>LEVEL 2.1 — ENTER THE NOISE</b><br><span>Explore the road. You can always turn back.</span></div><div class="panel"><b>NOISE</b><div class="meter"><div class="fill"></div></div><span class="nl">quiet</span></div></div>
+<div class="legend">Voices belong to places • retreat = quieter<br>Two crowded pressure zones ahead</div><div class="hint">← → Move freely</div>
+<div class="over"><div><h1>Too much at once.</h1><p style='font-size:20px'>Take a deep breath, Krati.</p><div class="ring"></div><b class="bl">HOLD SPACE — BREATHE</b></div></div>
+<div class="controls"><button class="left">←</button><button class="breath">HOLD TO BREATHE</button><button class="right">→</button></div><button class="sound">🔊 Voices ON</button></div>
+<script>
+(()=>{
+const WORLD=6100, view=()=>innerWidth, g=document.querySelector('#g'),cam=document.querySelector('#camera'),hero=document.querySelector('.hero'),fill=document.querySelector('.fill'),nl=document.querySelector('.nl'),overEl=document.querySelector('.over');
+let x=180,camX=0,L=0,R=0,last=0,soundOn=1,breathing=0,over=0,noise=0,duck=1,bs=0;
+const data=[
+[700,"I'm tired.",0],[1020,"What's next?",1],[1290,"Can I just have some peace?",0],[1510,"Are you sure?",1],
+[1810,"I don't want another argument.",0],[2010,"Think about the future.",1],
+// PRESSURE ZONE 1 — intentionally dense and repetitive
+[2240,"What's next?",1],[2290,"Are you sure?",0],[2340,"Think about the future.",1],[2390,"Don't make a mistake.",0],
+[2440,"Why does everyone need something from me?",0],[2490,"What's next?",1],[2540,"Think about the future.",0],[2590,"Are you sure?",1],
+[2640,"I don't want to explain myself again.",0],
+// recovery stretch
+[3000,"Why should I expect anything from anyone?",0],[3300,"I don't want to think about the future right now.",0],
+[3550,"Why does every decision feel like it affects everyone else?",0],
+// PRESSURE ZONE 2 — harder, with repeats from earlier
+[3920,"Hurry up.",1],[3970,"Don't make a mistake.",0],[4020,"Think about the future.",1],[4070,"Why do I have to keep explaining myself?",0],
+[4120,"Are you sure?",1],[4170,"Why can't people just listen?",0],[4220,"What's next?",1],[4270,"What do I actually want?",0],
+[4320,"Think about the future.",1],[4370,"Why is everyone making decisions about my life?",0],[4420,"Don't make a mistake.",1],
+[4470,"When did everything become so complicated?",0],
+// long quiet approach to the tower
+[5150,"What happened to the things that were just mine?",0]
+];
+const sources=[];data.forEach((d,i)=>{let e=document.createElement('div');e.className='source';e.style.left=d[0]+'px';
+let lane=(i*73)%250;e.style.bottom=(145+lane)+'px';
+let b=document.createElement('div');b.className='bubble';b.textContent=d[1];
+b.style.setProperty('--rot',((-8+(i*7)%17))+'deg');b.style.setProperty('--fs',(11+(i%4)*1.5)+'px');
+b.style.setProperty('--dur',(2.2+(i%5)*.45)+'s');e.appendChild(b);cam.appendChild(e);
+sources.push({x:d[0],text:d[1],gender:d[2],el:e,b,lastSpeak:0})});
+let pressureCleared=[false,false], currentZone=-1;
+function voice(s,vol){
+ if(!soundOn||!('speechSynthesis'in window)||vol<.3)return;
+ let now=performance.now(); if(now-s.lastSpeak<6500)return;s.lastSpeak=now;
+ let u=new SpeechSynthesisUtterance(s.text),vs=speechSynthesis.getVoices(),female=!s.gender;
+ let v=vs.find(v=>female?/zira|samantha|aria|susan|female/i.test(v.name):/david|daniel|mark|george|male/i.test(v.name));if(v)u.voice=v;
+ u.pitch=female?1.05:.83;u.rate=.92+Math.min(.3,noise/300);u.volume=Math.min(.85,vol*.85);speechSynthesis.speak(u);
+}
+function spatial(){
+ let sum=0, radius=610;
+ sources.forEach(s=>{
+   let d=Math.abs(x-s.x),v=Math.max(0,1-d/radius)*duck;
+   sum+=v*16;
+   s.el.classList.toggle('audible',v>.10);
+   s.el.style.setProperty('--op',Math.min(.96,.12+v).toFixed(2));
+   s.el.style.setProperty('--scale',(0.82+v*.38).toFixed(2));
+   if(v>.43)voice(s,v);
+ });
+ // Two designed pressure zones; the meter still falls naturally if Krati retreats.
+ let z1=x>2160&&x<2720, z2=x>3850&&x<4550;
+ currentZone=z1?0:z2?1:-1;
+ if(z1&&!pressureCleared[0]) sum+=18;
+ if(z2&&!pressureCleared[1]) sum+=22;
+ noise=Math.min(100,sum);
+ fill.style.width=noise+'%';
+ nl.textContent=noise<12?'quiet':noise<32?'some voices':noise<58?'crowded':noise<82?'very loud':'overwhelming';
+ cam.classList.toggle('noisy',noise>45&&noise<70);cam.classList.toggle('loud',noise>=70);
+ if(noise>88&&!over&&!breathing&&currentZone>=0&&!pressureCleared[currentZone]){
+   over=1;overEl.classList.add('show');
+ }
+}function breathe(v){breathing=v;overEl.classList.toggle('breathing',v);if(v){bs=performance.now();document.querySelector('.bl').textContent='Keep holding…';if('speechSynthesis'in window)speechSynthesis.cancel()}else document.querySelector('.bl').textContent='HOLD SPACE — BREATHE'}
+function loop(t){let dt=Math.min((t-last||16)/16,2);last=t;if(!over||breathing){if(L)x-=5.0*dt;if(R)x+=5.0*dt}x=Math.max(80,Math.min(WORLD-150,x));
+ if(breathing){duck=Math.max(.08,duck-.012*dt);if(t-bs>2800){if(currentZone>=0)pressureCleared[currentZone]=true;over=0;overEl.classList.remove('show');document.querySelector('.bl').textContent='HOLD SPACE — BREATHE'}}else duck=Math.min(1,duck+.008*dt);
+ let target=Math.max(0,Math.min(WORLD-view(),x-view()*.38));camX+=(target-camX)*.09;cam.style.transform=`translateX(${-camX}px)`;hero.style.left=x+'px';spatial();requestAnimationFrame(loop)}
+function hold(el,fn){el.onpointerdown=e=>{e.preventDefault();fn(1)};el.onpointerup=el.onpointercancel=el.onpointerleave=e=>{e.preventDefault();fn(0)}}
+hold(document.querySelector('.left'),v=>L=v);hold(document.querySelector('.right'),v=>R=v);hold(document.querySelector('.breath'),breathe);
+g.onkeydown=e=>{if(e.key==='ArrowLeft')L=1;if(e.key==='ArrowRight')R=1;if(e.key===' '&&!e.repeat)breathe(1);if(['ArrowLeft','ArrowRight',' '].includes(e.key))e.preventDefault()};
+g.onkeyup=e=>{if(e.key==='ArrowLeft')L=0;if(e.key==='ArrowRight')R=0;if(e.key===' ')breathe(0)};
+document.querySelector('.sound').onclick=e=>{soundOn=!soundOn;e.target.textContent=soundOn?'🔊 Voices ON':'🔇 Voices OFF';if(!soundOn&&'speechSynthesis'in window)speechSynthesis.cancel()};
+g.focus();requestAnimationFrame(loop);
+})();
+</script></body></html>
